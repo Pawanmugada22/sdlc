@@ -1,5 +1,6 @@
-package com.accelerate.sdlc;
+package com.accelerate.sdlc.init;
 
+import com.accelerate.sdlc.init.SdlcApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 

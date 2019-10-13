@@ -1,9 +1,8 @@
-package com.accelerate.sdlc;
-import java.util.ArrayList;
-import java.util.List;
+package com.accelerate.sdlc.init;
+
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
- 
+
 @RestController
 public class HelloSpring
 {
