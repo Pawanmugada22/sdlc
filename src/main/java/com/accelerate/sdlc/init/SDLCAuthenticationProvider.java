@@ -1,9 +1,10 @@
-package com.accelerate.sdlc.security;
+package com.accelerate.sdlc.init;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -15,21 +16,21 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 
-
 public class SDLCAuthenticationProvider implements AuthenticationProvider {
 	
 	@Autowired
 	JdbcTemplate jdbcTemplate;
-	@Autowired
-	Logger logger;
+
+	private static final Logger logger=LoggerFactory.getLogger(SDLCAuthenticationProvider.class);
 	
     List<GrantedAuthority> grantedAuthorities = new ArrayList<>();
 	
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+		logger.info("testing its working !!");
 		String name = authentication.getName();
 		Object credentials = authentication.getCredentials();
-		logger.info("credentials class: " + credentials.getClass());
+		logger.info("credentials class: "+credentials.getClass());
         if (!(credentials instanceof String)) {
         	throw new BadCredentialsException("Authentication failed for " + name);
         }
