@@ -1,4 +1,4 @@
-package com.accelerate.sdlc.init;
+package com.accelerate.sdlc;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
