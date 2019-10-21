@@ -18,7 +18,7 @@ public class HelloSpring {
 	
 	private static final Logger logger=LoggerFactory.getLogger(HelloSpring.class);
 	
-   @RequestMapping("/hello")
+   @RequestMapping("/hellorequest")
     public String getSampleText(HttpServletRequest request)
     {
 	  HttpSession session=request.getSession();
@@ -33,6 +33,24 @@ public class HelloSpring {
 	  logger.info(details.toString());
       return "Hello World! First Spring boot Rest Service";
     }
+   
+   @RequestMapping("/helloauthentication")
+   public String getAuthenticationDetails(Authentication auth) {
+	   logger.info(auth.getName());
+	   logger.info(auth.getAuthorities().toString());
+	   logger.info(auth.isAuthenticated() ? "true" : "false");
+	   logger.info(auth.getPrincipal().toString());
+	   logger.info(auth.getDetails().toString());
+	   logger.info("All : "+auth.toString());
+	   return "Check the log !!!";
+   }
+   
+   @RequestMapping("/helloprincipal")
+   public String getPrincipleDetails(Principal principal) {
+	   logger.info(principal.getName());
+	   logger.info(principal.toString());
+	   return "Just Check the log";
+   }
    
    @RequestMapping("/takeout")
    public String invalidateSession(HttpServletRequest request)
@@ -58,5 +76,10 @@ public class HelloSpring {
 	   logger.info(principal.getName());
 	   logger.info(principal.toString());
 	   return "Is is working now ?";
+   }
+   
+   @RequestMapping("/isauthorized")
+   public boolean isAutherised() {
+	   return true;
    }
 }

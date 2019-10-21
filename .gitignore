@@ -2,6 +2,7 @@ HELP.md
 .gradle
 build/
 src/main/resources/static/
+src/main/resource/views/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**
 !**/src/test/**

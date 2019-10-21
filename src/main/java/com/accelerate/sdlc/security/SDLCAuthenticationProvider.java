@@ -39,7 +39,11 @@ public class SDLCAuthenticationProvider implements AuthenticationProvider {
 //        if (role==null) {
 //            throw new BadCredentialsException("Authentication failed for " + name);
 //        }
+        if(name.equals("admin") || name.equals("tomcat")) {
         grantedAuthorities.add(new SimpleGrantedAuthority("SU"));
+        } else {
+        	throw new BadCredentialsException("Authentication failed for " + name);
+        }
         Authentication auth = new UsernamePasswordAuthenticationToken(name, password, grantedAuthorities);
         return auth;
 	}
