@@ -13,6 +13,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.accelerate.sdlc.model.LoginCredentials;
+
 @RestController
 public class HelloSpring {
 	
@@ -35,14 +37,17 @@ public class HelloSpring {
     }
    
    @RequestMapping("/helloauthentication")
-   public String getAuthenticationDetails(Authentication auth) {
-	   logger.info(auth.getName());
+   @PreAuthorize("hasAnyAuthority('SU')")
+   public LoginCredentials getAuthenticationDetails(Authentication auth) {
 	   logger.info(auth.getAuthorities().toString());
 	   logger.info(auth.isAuthenticated() ? "true" : "false");
 	   logger.info(auth.getPrincipal().toString());
-	   logger.info(auth.getDetails().toString());
-	   logger.info("All : "+auth.toString());
-	   return "Check the log !!!";
+	   LoginCredentials login=new LoginCredentials();
+	   login.setUsername(auth.getPrincipal().toString());
+	   login.setRole(auth.getAuthorities().toString().substring(1, 3));
+	   login.setIsauthorized(auth.isAuthenticated());
+	   login.setPassword("CONFIDENTIAL");
+	   return login;
    }
    
    @RequestMapping("/helloprincipal")
