@@ -11,8 +11,10 @@ public class DevTools {
 	
 	private static final Logger logger=LoggerFactory.getLogger(DevTools.class);
 	
+	
 	@RequestMapping("/sessions")
 	public String getSessionDetails() {
+		
 		logger.info("Invalidating all the sessions now !!!");
 		
 		return "Testing";

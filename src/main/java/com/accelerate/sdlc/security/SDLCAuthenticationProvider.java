@@ -20,7 +20,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import com.accelerate.sdlc.model.LoginCredentials;
-import com.accelerate.sdlc.util.*;
+import com.accelerate.sdlc.util.SDLCSecurityUtil;
 
 import lombok.Cleanup;
 

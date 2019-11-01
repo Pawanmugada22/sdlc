@@ -39,7 +39,7 @@ public class SDLCSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.cors().and()
-        	.authorizeRequests().antMatchers("/resources/static/**","/loginpage","/sdlclogin","/assets/**","/","/**.css","/**.js","/**.ico","/**.jpg","/**.jpeg").permitAll().anyRequest().authenticated()
+        	.authorizeRequests().antMatchers("/resources/static/**","/sdlclogin","/assets/**","/","/**.css","/**.js","/**.ico","/**.jpg","/**.jpeg").permitAll().anyRequest().authenticated()
             .and().formLogin().loginPage("/").loginProcessingUrl("/sdlclogin").defaultSuccessUrl("/?success")
             .and().authenticationProvider(SDLCAuthenticationProvider()).csrf().disable();
     }
