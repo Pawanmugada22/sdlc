@@ -36,7 +36,7 @@ public class SDLCPersonalTasks {
 	
 	@RequestMapping(value="/createpertask",method=RequestMethod.POST)
 	@PreAuthorize("hasAnyAuthority('SU','TL','RS')")
-	public String postNewPerTask(@RequestBody PersonnalTasks newTask,Authentication auth) {
+	public SDLCHttpResp postNewPerTask(@RequestBody PersonnalTasks newTask,Authentication auth) {
 		PersonnalTasksDao pertask=new PersonnalTasksDao();
 		return pertask.createNewPerTask(newTask, auth, datasource);
 	}

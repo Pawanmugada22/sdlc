@@ -36,9 +36,9 @@ public class PersonnalTasksDao {
 					+ auth.getPrincipal().toString() + "'");
 			int empId = rs.next() ? rs.getInt("CODE") : 0;
 			rs = stmt.executeQuery(
-					"SELECT APTC.APTC_TASK_PER_CODE AS TASKCODE,APTC.APTC_TASK_NAME AS TASKNAME,APTC.APTC_TASK_STATUS AS TASKSTATUS,"
+					"SELECT APTC.APTC_TASK_PER_CODE AS TASKCODE,APTC.APTC_TASK_NAME AS TASKNAME,APTC.APTC_TASK_STATUS AS TASKSTATUS,APTC.APTC_TASK_CONTEXT AS TASKCONTEXT,"
 							+ "APTE.APTE_TASK_SUMMARY AS TASKSUMMARY,APTE.APTE_TASK_DESCRIPTION AS TASKDESCRIPTION,APTE.APTE_REMARKS AS TASKREMARKS FROM ACC_PER_TASK_COM APTC"
-							+ " INNER JOIN ACC_PER_TASK_EXP APTE ON (APTC.APTC_TASK_CODE=APTE.APTE_TASK_CODE AND APTC.APTC_TASK_PER_CODE=APTE.APTE_TASK_PER_CODE) "
+							+ " INNER JOIN ACC_PER_TASK_EXP APTE ON (APTC.APTC_ASSIGNED=APTE.APTE_ASSIGNED_CODE AND APTC.APTC_TASK_PER_CODE=APTE.APTE_TASK_PER_CODE) "
 							+ "WHERE APTC.APTC_ASSIGNED=" + empId + " AND APTC.APTC_TASK_CONTEXT='" + taskContext
 							+ "'");
 			logger.info("Processing details in database");
@@ -46,6 +46,7 @@ public class PersonnalTasksDao {
 				PersonnalTasks pertask = new PersonnalTasks();
 				pertask.setTaskCode(rs.getInt("TASKCODE"));
 				pertask.setTaskName(rs.getString("TASKNAME"));
+				pertask.setTaskContext(rs.getString("TASKCONTEXT"));
 				pertask.setTaskStatus(rs.getString("TASKSTATUS"));
 				pertask.setTaskSummary(rs.getString("TASKSUMMARY"));
 				pertask.setTaskDescription(rs.getString("TASKDESCRIPTION"));
@@ -60,7 +61,8 @@ public class PersonnalTasksDao {
 		}
 	}
 
-	public String createNewPerTask(PersonnalTasks newTask, Authentication auth, DataSource datasource) {
+	public SDLCHttpResp createNewPerTask(PersonnalTasks newTask, Authentication auth, DataSource datasource) {
+		SDLCHttpResp httpresp=new SDLCHttpResp();
 		try {
 			@Cleanup
 			Connection conn = datasource.getConnection();
@@ -71,38 +73,41 @@ public class PersonnalTasksDao {
 			ResultSet rs = stmt.executeQuery("SELECT AEL_EMP_CODE FROM SDLC.ACC_EMP_LOGIN WHERE AEL_LOGIN_ID='"
 					+ auth.getPrincipal().toString() + "'");
 			int empId = rs.next() ? rs.getInt("AEL_EMP_CODE") : 0;
-			rs = stmt
-					.executeQuery("SELECT COALESCE(MAX(APTC_TASK_CODE)+1,1) AS TASKUNICODE FROM SDLC.ACC_PER_TASK_COM");
-			int taskUniCode = rs.next() ? rs.getInt("TASKUNICODE") : 0;
 			rs = stmt.executeQuery(
 					"SELECT COALESCE(MAX(APTC_TASK_PER_CODE)+1,1) AS TASKCODE FROM SDLC.ACC_PER_TASK_COM WHERE APTC_ASSIGNED='"
 							+ empId + "'");
 			int taskCode = rs.next() ? rs.getInt("TASKCODE") : 0;
 			logger.info("Inserting in common table");
 			stmt.execute(
-					"INSERT INTO ACC_PER_TASK_COM (APTC_TASK_CODE,APTC_TASK_PER_CODE,APTC_TASK_NAME,APTC_ASSIGNED,APTC_TASK_STATUS,APTC_TASK_DEPENDENCY,APTC_TASK_CONTEXT)"
-							+ " VALUES (" + taskUniCode + "," + taskCode + ",'" + newTask.getTaskName() + "'," + empId
+					"INSERT INTO ACC_PER_TASK_COM (APTC_TASK_PER_CODE,APTC_TASK_NAME,APTC_ASSIGNED,APTC_TASK_STATUS,APTC_TASK_DEPENDENCY,APTC_TASK_CONTEXT)"
+							+ " VALUES (" + taskCode + ",'" + newTask.getTaskName() + "'," + empId
 							+ ",'P',0,'C')");
 			logger.info("Inserting in details table");
 			stmt.execute(
-					"INSERT INTO ACC_PER_TASK_HIS (APTH_TASK_CODE,APTH_TASK_PER_CODE,APTH_TASK_UPT_DATE,APTH_TASK_STATUS)"
-							+ " VALUES (" + taskUniCode + "," + taskCode + ",'" + newTask.getTaskSummary() + "','"
+					"INSERT INTO ACC_PER_TASK_EXP (APTE_ASSIGNED_CODE,APTE_TASK_PER_CODE,APTE_TASK_SUMMARY,APTE_TASK_DESCRIPTION,APTE_REMARKS)"
+							+ " VALUES (" + empId + "," + taskCode + ",'" + newTask.getTaskSummary() + "','"
 							+ newTask.getTaskDescription() + "','" + newTask.getTaskRemarks() + "')");
 			logger.info("Inserting in audit table");
-			perTaskHistory(taskUniCode, taskCode, "P", conn, stmt);
+			perTaskHistory(empId, taskCode, "P", conn, stmt);
 			conn.commit();
-			return "Task created successfully";
+			httpresp.setMessage("Task created successfully");
+			httpresp.setStatus("Success");
+			httpresp.setBoolstatus(true);
+			return httpresp;
 		} catch (Exception ex) {
 			logger.info("Exception occured while creating new task");
 			ex.printStackTrace();
-			return "Task creation failed! Retry again";
+			httpresp.setMessage("Error while creating new Task");
+			httpresp.setStatus("Failure");
+			httpresp.setBoolstatus(false);
+			return httpresp;
 		}
 	}
 
-	public void perTaskHistory(int taskUniCode, int taskCode, String status, Connection conn, Statement stmt)
+	public void perTaskHistory(int empId, int taskCode, String status, Connection conn, Statement stmt)
 			throws Exception {
-		stmt.executeQuery(
-				"INSERT INTO ACC_PER_TASK_HIS (APTH_TASK_CODE,APTH_TASK_PER_CODE,APTH_TASK_UPT_DATE,APTH_TASK_STATUS) "
-						+ "VALUES (" + taskUniCode + "," + taskCode + ",NOW(),'" + status + "')");
+		stmt.execute(
+				"INSERT INTO ACC_PER_TASK_HIS (APTH_ASSIGNED_CODE,APTH_TASK_PER_CODE,APTH_TASK_UPT_DATE,APTH_TASK_STATUS) "
+						+ "VALUES (" + empId + "," + taskCode + ",NOW(),'" + status + "')");
 	}
 }
