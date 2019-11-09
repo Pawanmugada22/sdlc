@@ -12,7 +12,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 
-import com.accelerate.sdlc.model.*;
+import com.accelerate.sdlc.model.PerTaskStatus;
+import com.accelerate.sdlc.model.PersonnalTasks;
+import com.accelerate.sdlc.model.SDLCHttpResp;
+import com.accelerate.sdlc.util.SDLCRestUtil;
 
 import lombok.Cleanup;
 
@@ -25,21 +28,22 @@ public class PersonnalTasksDao {
 		try {
 			logger.info("Getting task details");
 			String taskContext;
-			taskContext = (context == "A" ? "A" : "C");
+			logger.info(context+".");
+			taskContext = (context.toString() == "C" ? "C" : "N");
 			@Cleanup
 			Connection conn = datasource.getConnection();
 			@Cleanup
 			Statement stmt = conn.createStatement();
-			logger.info("Getting task details from database");
 			@Cleanup
-			ResultSet rs = stmt.executeQuery("SELECT AEL_EMP_CODE AS CODE FROM SDLC.ACC_EMP_LOGIN WHERE AEL_LOGIN_ID='"
-					+ auth.getPrincipal().toString() + "'");
-			int empId = rs.next() ? rs.getInt("CODE") : 0;
+			ResultSet rs = null;
+			logger.info("Getting task details from database");
+			int empId=SDLCRestUtil.getEmployeeId(stmt,conn,rs,auth.getPrincipal().toString());
+			logger.info(taskContext+" "+empId);
 			rs = stmt.executeQuery(
 					"SELECT APTC.APTC_TASK_PER_CODE AS TASKCODE,APTC.APTC_TASK_NAME AS TASKNAME,APTC.APTC_TASK_STATUS AS TASKSTATUS,APTC.APTC_TASK_CONTEXT AS TASKCONTEXT,"
-							+ "APTE.APTE_TASK_SUMMARY AS TASKSUMMARY,APTE.APTE_TASK_DESCRIPTION AS TASKDESCRIPTION,APTE.APTE_REMARKS AS TASKREMARKS FROM ACC_PER_TASK_COM APTC"
-							+ " INNER JOIN ACC_PER_TASK_EXP APTE ON (APTC.APTC_ASSIGNED=APTE.APTE_ASSIGNED_CODE AND APTC.APTC_TASK_PER_CODE=APTE.APTE_TASK_PER_CODE) "
-							+ "WHERE APTC.APTC_ASSIGNED=" + empId + " AND APTC.APTC_TASK_CONTEXT='" + taskContext
+							+ "APTE.APTE_TASK_SUMMARY AS TASKSUMMARY,APTE.APTE_TASK_DESCRIPTION AS TASKDESCRIPTION,APTE.APTE_REMARKS AS TASKREMARKS FROM SDLC.ACC_PER_TASK_COM APTC"
+							+ " INNER JOIN SDLC.ACC_PER_TASK_EXP APTE ON (APTC.APTC_ASSIGNED=APTE.APTE_ASSIGNED_CODE AND APTC.APTC_TASK_PER_CODE=APTE.APTE_TASK_PER_CODE) "
+							+ "WHERE APTC.APTC_ASSIGNED=" + empId + " AND APTC.APTC_TASK_CONTEXT='" + context.toString()
 							+ "'");
 			logger.info("Processing details in database");
 			while (rs.next()) {
@@ -53,6 +57,9 @@ public class PersonnalTasksDao {
 				pertask.setTaskRemarks(rs.getString("TASKREMARKS"));
 				pertasks.add(pertask);
 			}
+			rs.close();
+			stmt.close();
+			conn.close();
 			return pertasks;
 		} catch (Exception ex) {
 			logger.info("Exception occured while getting the task list");
@@ -70,9 +77,9 @@ public class PersonnalTasksDao {
 			@Cleanup
 			Statement stmt = conn.createStatement();
 			@Cleanup
-			ResultSet rs = stmt.executeQuery("SELECT AEL_EMP_CODE FROM SDLC.ACC_EMP_LOGIN WHERE AEL_LOGIN_ID='"
-					+ auth.getPrincipal().toString() + "'");
-			int empId = rs.next() ? rs.getInt("AEL_EMP_CODE") : 0;
+			ResultSet rs=null;
+			logger.info("Getting task details from database");
+			int empId=SDLCRestUtil.getEmployeeId(stmt,conn,rs,auth.getPrincipal().toString());
 			rs = stmt.executeQuery(
 					"SELECT COALESCE(MAX(APTC_TASK_PER_CODE)+1,1) AS TASKCODE FROM SDLC.ACC_PER_TASK_COM WHERE APTC_ASSIGNED='"
 							+ empId + "'");
@@ -93,6 +100,10 @@ public class PersonnalTasksDao {
 			httpresp.setMessage("Task created successfully");
 			httpresp.setStatus("Success");
 			httpresp.setBoolstatus(true);
+			httpresp.setPerTaskCode(taskCode);
+			rs.close();
+			stmt.close();
+			conn.close();
 			return httpresp;
 		} catch (Exception ex) {
 			logger.info("Exception occured while creating new task");
@@ -109,5 +120,61 @@ public class PersonnalTasksDao {
 		stmt.execute(
 				"INSERT INTO ACC_PER_TASK_HIS (APTH_ASSIGNED_CODE,APTH_TASK_PER_CODE,APTH_TASK_UPT_DATE,APTH_TASK_STATUS) "
 						+ "VALUES (" + empId + "," + taskCode + ",NOW(),'" + status + "')");
+	}
+	
+	public String changePerTaskStatus(PerTaskStatus pertask, Authentication auth, DataSource datasource) {
+		try {
+			@Cleanup
+			Connection conn = datasource.getConnection();
+			conn.setAutoCommit(false);
+			@Cleanup
+			Statement stmt = conn.createStatement();
+			@Cleanup
+			ResultSet rs=null;
+			logger.info("Getting task details from database");
+			int empId=SDLCRestUtil.getEmployeeId(stmt,conn,rs,auth.getPrincipal().toString());
+			if(pertask.getTaskChange()=="S") {
+				perTaskHistory(empId,pertask.getTaskCode(),pertask.getTaskStatus(),conn,stmt);	
+			}
+			stmt.execute("UPDATE SDLC.ACC_PER_TASK_COM SET APTC_TASK_STATUS='"+pertask.getTaskStatus()
+			+"', APTC_TASK_CONTEXT='"+pertask.getTaskContext()+"' WHERE APTC_TASK_PER_CODE="+pertask.getTaskCode()
+			+" AND APTC_ASSIGNED="+empId);
+			conn.commit();
+//			rs.close();
+			stmt.close();
+			conn.close();
+			return "Success";	
+		} catch(Exception ex) {
+			logger.info("Error while updating status of personnal task");
+			ex.printStackTrace();
+			return "Failure";
+		}
+	}
+	
+	public String updatePerTask(PersonnalTasks pertask, Authentication auth, DataSource datasource) {
+		try {
+			@Cleanup
+			Connection conn = datasource.getConnection();
+			conn.setAutoCommit(false);
+			@Cleanup
+			Statement stmt = conn.createStatement();
+			@Cleanup
+			ResultSet rs=null;
+			logger.info("Getting task details from database");
+			int empId=SDLCRestUtil.getEmployeeId(stmt,conn,rs,auth.getPrincipal().toString());
+			stmt.execute("UPDATE SDLC.ACC_PER_TASK_COM SET APTC_TASK_NAME='"+pertask.getTaskName()
+			+"' WHERE APTC_TASK_PER_CODE="+pertask.getTaskCode()+" AND APTC_ASSIGNED="+empId);
+			stmt.execute("UPDATE SDLC.ACC_PER_TASK_EXP SET APTE_TASK_SUMMARY='"+pertask.getTaskSummary()
+			+"',APTE_TASK_DESCRIPTION='"+pertask.getTaskDescription()+"',APTE_REMARKS='"+pertask.getTaskRemarks()
+			+"' WHERE APTE_TASK_PER_CODE="+pertask.getTaskCode()+" AND APTE_ASSIGNED_CODE= "+empId);
+			conn.commit();
+			stmt.close();
+			conn.close();
+			return "Success";
+		} catch(Exception ex) {
+			logger.info("Error while updating the details of personnal task");
+			ex.printStackTrace();
+			return "Failure";
+		}
 	}
 }

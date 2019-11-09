@@ -18,7 +18,6 @@ import com.accelerate.sdlc.model.*;
 import com.accelerate.sdlc.services.PersonnalTasksDao;
 
 
-
 @RestController
 @RequestMapping("/pertask")
 public class SDLCPersonalTasks {
@@ -43,13 +42,15 @@ public class SDLCPersonalTasks {
 	
 	@RequestMapping(value="/posttaskstatus",method=RequestMethod.POST)
 	@PreAuthorize("hasAnyAuthority('SU','TL','RS')")
-	public String postTaskStatus(Authentication auth) {
-		return "Haha";
+	public String postTaskStatus(@RequestBody PerTaskStatus pertaskchange,Authentication auth) {
+		PersonnalTasksDao pertask=new PersonnalTasksDao();
+		return pertask.changePerTaskStatus(pertaskchange, auth, datasource);
 	}
 	
 	@RequestMapping(value="/updpertask",method=RequestMethod.POST)
 	@PreAuthorize("hasAnyAuthority('SU','TL','RS')")
-	public String updateTaskDetails(Authentication auth) {
-		return "Haha";
+	public String updateTaskDetails(@RequestBody PersonnalTasks pertaskupdate,Authentication auth) {
+		PersonnalTasksDao pertask=new PersonnalTasksDao();
+		return pertask.updatePerTask(pertaskupdate, auth, datasource);
 	}
 }

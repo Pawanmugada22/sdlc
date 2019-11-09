@@ -89,7 +89,9 @@ public class SDLCAuthenticationProvider implements AuthenticationProvider {
 				loginauth.setRole(rs.getString("ROLE"));
 				loginauth.setIsauthorized(true);
 			}
-
+			rs.close();
+			stmt.close();
+			conn.close();
 		} catch (Exception ex) {
 			logger.info("Exception while validating password");
 			ex.printStackTrace();
