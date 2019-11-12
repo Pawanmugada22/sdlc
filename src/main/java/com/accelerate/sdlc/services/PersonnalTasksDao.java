@@ -37,7 +37,7 @@ public class PersonnalTasksDao {
 			@Cleanup
 			ResultSet rs = null;
 			logger.info("Getting task details from database");
-			int empId=SDLCRestUtil.getEmployeeId(stmt,conn,rs,auth.getPrincipal().toString());
+			int empId=SDLCRestUtil.getEmployeeId(stmt,conn,auth.getPrincipal().toString());
 			logger.info(taskContext+" "+empId);
 			rs = stmt.executeQuery(
 					"SELECT APTC.APTC_TASK_PER_CODE AS TASKCODE,APTC.APTC_TASK_NAME AS TASKNAME,APTC.APTC_TASK_STATUS AS TASKSTATUS,APTC.APTC_TASK_CONTEXT AS TASKCONTEXT,"
@@ -79,7 +79,7 @@ public class PersonnalTasksDao {
 			@Cleanup
 			ResultSet rs=null;
 			logger.info("Getting task details from database");
-			int empId=SDLCRestUtil.getEmployeeId(stmt,conn,rs,auth.getPrincipal().toString());
+			int empId=SDLCRestUtil.getEmployeeId(stmt,conn,auth.getPrincipal().toString());
 			rs = stmt.executeQuery(
 					"SELECT COALESCE(MAX(APTC_TASK_PER_CODE)+1,1) AS TASKCODE FROM SDLC.ACC_PER_TASK_COM WHERE APTC_ASSIGNED='"
 							+ empId + "'");
@@ -129,10 +129,8 @@ public class PersonnalTasksDao {
 			conn.setAutoCommit(false);
 			@Cleanup
 			Statement stmt = conn.createStatement();
-			@Cleanup
-			ResultSet rs=null;
 			logger.info("Getting task details from database");
-			int empId=SDLCRestUtil.getEmployeeId(stmt,conn,rs,auth.getPrincipal().toString());
+			int empId=SDLCRestUtil.getEmployeeId(stmt,conn,auth.getPrincipal().toString());
 			if(pertask.getTaskChange()=="S") {
 				perTaskHistory(empId,pertask.getTaskCode(),pertask.getTaskStatus(),conn,stmt);	
 			}
@@ -140,7 +138,6 @@ public class PersonnalTasksDao {
 			+"', APTC_TASK_CONTEXT='"+pertask.getTaskContext()+"' WHERE APTC_TASK_PER_CODE="+pertask.getTaskCode()
 			+" AND APTC_ASSIGNED="+empId);
 			conn.commit();
-//			rs.close();
 			stmt.close();
 			conn.close();
 			return "Success";	
@@ -158,10 +155,8 @@ public class PersonnalTasksDao {
 			conn.setAutoCommit(false);
 			@Cleanup
 			Statement stmt = conn.createStatement();
-			@Cleanup
-			ResultSet rs=null;
 			logger.info("Getting task details from database");
-			int empId=SDLCRestUtil.getEmployeeId(stmt,conn,rs,auth.getPrincipal().toString());
+			int empId=SDLCRestUtil.getEmployeeId(stmt,conn,auth.getPrincipal().toString());
 			stmt.execute("UPDATE SDLC.ACC_PER_TASK_COM SET APTC_TASK_NAME='"+pertask.getTaskName()
 			+"' WHERE APTC_TASK_PER_CODE="+pertask.getTaskCode()+" AND APTC_ASSIGNED="+empId);
 			stmt.execute("UPDATE SDLC.ACC_PER_TASK_EXP SET APTE_TASK_SUMMARY='"+pertask.getTaskSummary()

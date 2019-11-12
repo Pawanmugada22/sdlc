@@ -99,5 +99,11 @@ public class SDLCAuthenticationProvider implements AuthenticationProvider {
 		}
 		return loginauth;
 	}
+	
+	public boolean isCredentialsValid(String username, String password) throws Exception{
+		@Cleanup
+		LoginCredentials loginauth=new LoginCredentials();
+		return this.isLoginAuthorized(username, password, loginauth).isIsauthorized();
+	}
 
 }
